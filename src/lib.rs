@@ -308,4 +308,18 @@ mod tests {
         let tr = t.get_ref();
         check_debug(&tr);
     }
+
+    #[test]
+    fn use_ref_after_drop() {
+        let t = Pinboard::<i32>::new(3);
+        let guarded_ref = t.get_ref().unwrap();
+        drop(t);
+        // Even though we dropped t, guarded_ref still exists
+        // so the thread is still pinned and hence the data is still there
+        assert!(epoch::is_pinned());
+        assert_eq!(3, *guarded_ref);
+        // If we drop guard_ref, the epoch can advance
+        drop(guarded_ref);
+        assert!(!epoch::is_pinned())
+    }
 }
